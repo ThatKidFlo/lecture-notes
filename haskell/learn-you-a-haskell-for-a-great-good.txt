@@ -17,3 +17,71 @@
 		:set prompt "ghci> " -- this will set the prompter text to the supplied string parameter.
 
 		5 / 2 -- this results in 2.5, so integer division is not the default one
+
+- as in any language, operator precedence is still the same, and it can be altered using parantheses.
+		
+		50 * (100 - 4999) -- obviously yields -244950
+
+- a pitfall here are negative numbers. A negative number is best surrounded by parantheses, in order to avoid confusing the compiler.
+(and in order to avoid a precedence parsing error)
+
+- boolean algebra is the same, having operators like &&, ||, not, and the values True, and False.
+
+- testing for equality is done using the symbols '==', and '/='.
+
+- all the numeric, binary operators are actually functions. (i.e. +, -, * etc.)
+
+- most of the non-numeric functions are actually written in prefix format.
+
+		succ 8 -- yields a 9
+
+- the 'succ' function will take as input anything that has defined a successor, and returns that successor.
+
+- min and max take two parameters that have an order defined (e.g. numbers), and return the lesser/greater, respectively.
+		
+		min 3 4 -- results in 3
+
+		min -3 4 -- results in a parsing error, lol :)
+
+		min (-3) 4 -- results in -3
+
+- function application means calling a function by specifying its name, and then supplying its parameters. This language construct has the highest precedence. This means that the following statements are equivalent:
+
+		succ 9 + max 3 4 + 1
+
+		(succ 9) + (max 3 4) + 1
+
+- this means that in the case of
+		
+		succ 9 * 10 -- the result will be 100, because the evaluation order is (succ 9) * 10
+
+- function application is not denoted by the use of parantheses, like in C-like languages. Therefore, baz(3, "haha") would be simply baz 3 haha in haskell. Also, 
+
+		bar (bar 3) -- this means something like bar(bar(3)). Also, notice the space between the function name and its sole parameter!
+
+- function definition is pretty similar to the calling syntax. The function name is followed by space-separated parameters.
+- the '=' symbol marks the start of the function body.
+
+- the simple doubleMe, and doubleUs functions are a common pattern to Haskell. (i.e. building small functions, that are easy to reason about, and whose proper functionality can be verified, and combining them into more complex programs).
+- This helps avoid repetition of code, as well as enforcing a clear separation of higher level abstractions, and implementation details.
+Using such function composition will make the code resilient to change, as a change in the specification should result in a very localized change in the code (e.g. in the doubleMe function, which handles the low-level operation.)
+
+- Haskell functions don't have to be in any particular order in a compilation unit, so the usage of doubleMe in the body of doubleUs does not enforce prior definition of doubleMe.
+
+- ghci complains if indentation is done using tabs, so spaces are recommended instead.
+
+- the difference between haskell's if statement, and the if statement from imperative languages, is that in haskell the else part is mandatory.
+This is because every expression or function must return something.
+
+- The if statement here is an expression (i.e. a piece of code that returns a value).
+
+- a common practice in haskell is using an aphostrophe in the name of the function, if it is a strict function (one that is not lazy.)
+
+		a'b is a valid identifier.
+
+- A function like 
+		str = "hello world"
+
+	is called a definition (or a name).
+
+- because changing what names (and functions mean) once they have been defined, str and the world "hello world" can be used interchangeably.
