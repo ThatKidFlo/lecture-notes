@@ -1,0 +1,183 @@
+1) the first evaluation model in scala is called the substitution model (call by value), which is formalized in the lambda-calculus theory. It consider that all that evaluation does is nothing more than reduce an expression to a value. This is a very simple, yet powerful mechanism, and it will only work if the expressions under consideration have no side effects (i.e. they are pure). This implies a simple substitution of a value name by its right hand side definition, until a value is yielded.
+		:: advantage: every argument is evaluated only once
+
+2) the second evaluation model is the call by name, i.e.
+
+		sumOfSquares(5, 2 + 2) = square(5) + square(2 + 2) = 25 + (2 + 2) * (2 + 2) = 25 + 4 * (2 + 2) = 25 + 16 = 41
+
+		:: advantage: any argument that is not used in the body of the function is not evaluated.
+
+-> both strategies will reduce an expression to the same value, as long as the following conditions hold:
+	1) the reduced expression consists of pure functions
+	2) both evaluations will terminate
+
+	ex.
+		def test(x: Int, y: Int) = x * x
+
+		1) test(2, 3) = 2 * 2 = 4
+		2) test(2, 3) = 2 * 4 = 4
+
+		1) test(3 + 4, 8) = test(7, 8) = 7 * 7 = 49
+		2) test(3 + 4, 8) = (3 + 4) * (3 + 4) = 7 * (3 + 4) = 7 * 7 = 49
+
+		1) test(3 + 4, 2 * 4) = test(7, 2 * 4) = test(7, 8) = 7 * 7 = 49
+		2) test(3 + 4, 2 * 4) = (3 + 4) * (3 + 4) = 7 * (3 + 4) = 7 * 7 = 49
+
+- if call by value of an expression terminates, then call by name of the same expression will also terminate. The reciprocal is not true.
+
+	demonstration:
+
+		def loop: Int = loop 		// infinite loop
+
+		def first(x: Int, y: Int) = x
+
+	::CBV::	
+		first(1, loop) 		// since both parameters are evaluated BEFORE the function is called, loop will create an infinite loop.
+
+	::CBN::
+		first(1, loop) 		// since loop is not used in the body of the function, it will not be evaluated, and therefore the 
+							// expression evaluation will terminate
+
+
+- scala normally uses call-by-value, but if the type of a function parameter starts with => then it uses call by name.
+
+	e.g.:
+
+		for the terminating version of first, the function must instead be
+
+		def first(x: Int, y: => Int) = x
+
+- encoding and:
+		def and(x: Boolean, y: => Boolean): Boolean = if(x) y else false
+		def and(x: Boolean, y: => Boolean): Boolean = if(!x) false else y
+
+- encoding or:
+		def or(x: Boolean, y: => Boolean): Boolean = if(x) x else y
+		def or(x: Boolean, y: => Boolean): Boolean = if(!x) y else x
+
+- implementation of newton's square root method:
+
+		
+		def sqrt(x: Double): Double = {
+			def sqrtIter(guess: Double, x: Double): Double = {
+				if(isGoodEnough(guess, x)) guess
+				else sqrtIter(improve(guess, x), x)
+			}
+
+			def isGoodEnough(guess: Double, x: Double): Boolean = Math.abs(guess * guess - x) / x < 0.01
+
+			def improve(guess: Double, x: Double): Double = (guess + x / guess) / 2
+
+			sqrtIter(1.0, x)
+		}
+
+- this way, the inner functions (which are only implementation details of sqrt) do not pollute the global namespace, and  they are confined only to the scope of sqrt.
+
+- because of the lexical scoping, and since all the auxiliary functions have the original x parameter in their scope, there is no use in shadowing it and receiving it as parameter, since any closure can use the external x value.
+
+		def sqrt(x: Double): Double = {
+			def sqrtIter(guess: Double): Double = {
+				if(isGoodEnough(guess)) guess
+				else sqrtIter(improve(guess))
+			}
+
+			def isGoodEnough(guess: Double): Boolean = Math.abs(guess * guess - x) / x < 0.01
+
+			def improve(guess: Double): Double = (guess + x / guess) / 2
+
+			sqrtIter(1.0, x)
+		}
+
+- if a function calls itself as its last action, the function's stack frame can be reused. This is called tail-recursion. Tail-recursive functions are iterative processes. 
+
+-- generalization:: if a function calls another function (which may be itself) as the last action, a single stack frame is sufficient for both functions. Such calls are called tail-calls.
+
+- in scala, only recursive calls to the same function are optimized.
+
+-- first order function - a function that only takes in as parameters raw data types, and acts upon them.
+
+-- higher order function - a function that can also take in as parameter other functions, and use them.
+
+-- Currying
+
+		
+	  def sumVeryInflexible(a: Int, b: Int, f: Int => Int): Int = {
+	    f(a) + f(b)
+	  }
+
+	  -> this solution is inflexible, because it requires all the parameters, and wanting to separate the contexts when f is passed, and a and b are passed would require a partially applied function.
+
+	  def sumVerbose(f: Int => Int): (Int, Int) => Int = {
+	    (a: Int, b: Int) => f(a) + f(b)
+	  }
+
+	  -> this solution is slightly more verbose, as it returns a function that takes the original parameters, but calling it is quite similar:
+	  	sumVerbose(cube)(2, 3) // function call is left associative => (sumVerbose(cube)) (2, 3)
+
+	  def sumShort(f: Int => Int)(a: Int, b: Int): Int = {
+	    f(a) + f(b)
+	  }
+
+	  -> this is syntactic sugar, and it represents a function that takes a function Int -> Int, and returns a function (Int, Int) -> Int, written in a more concise way.
+
+	In scala, these expressions are equivalent,
+
+		def f(args_1), ..., (args_n) = E , for each n > 1
+
+		def f(args_1), ..., (args_n-1) = { def g(args_n) = E; g} // return the newly created g, where g is an unbound variable.
+
+		or, more succintly: def f(args_1), ..., (args_n-1) = (args_n => E)
+
+- by repeating this process n times, the above are all proven to be equivalent to:
+		
+		def f = (args_1 => (args_2 => (... => (args_n => E)) ... )))
+
+- this is called currying, named for its instigator, Haskell Brooks Curry, a famous 20th century logician.
+
+- the type of the following function:
+	
+		def sum(f: Int => Int)(a: Int, b: Int): Int = ...
+
+	is (Int => Int) => (Int, Int) => Int
+
+- functional type associates to the right, rather than left, so the expression above is equivalent to:
+		
+		(Int => Int) => ((Int, Int) => Int)
+
+- a function Int => Int => Int is equivalent to Int => (Int => Int)
+
+	  def mapReduce(mapper: Int => Int, reducer: (Int, Int) => Int, identity: Int)(a: Int, b: Int): Int = {
+	    if(a > b) identity
+	    else reducer(mapper(a), mapReduce(mapper, reducer, identity)(a + 1, b))
+	  }
+
+	  def mapReduce(mapper: Int => Int)(identity: Int)(reducer: (Int, Int) => Int)(a: Int, b: Int): Int = {
+	    if(a > b) identity
+	    else reducer(mapper(a), mapReduce(mapper)(identity)(reducer)(a + 1, b))
+	  }
+
+	  def sumMR(f: Int => Int)(a: Int, b: Int) = mapReduce(f, _ + _, 0)(a, b)
+	  def prodMR(f: Int => Int)(a: Int, b: Int) = mapReduce(f)(1)(_ * _)(a, b)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

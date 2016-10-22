@@ -1,0 +1,866 @@
+
+- A type is not required, as it will be inferred from the initialization expression. A variable/value cannot appear without
+an explicit initialization. However, type information can be specified, if necessary, like so:
+	
+		val greeting, goodbye: String = null 
+
+- Even primitive types such as Int, Boolean, etc. are classes. The String class also relies on the java.lang.String, but
+the StringOps class enhances this type with operations such as intersection:
+
+		1.to(3) -> an immutable range of [1, 2, 3]
+
+	In this example, the java.lang.Integer 1 is converted to RichInt from scala, which is augmented with methods such as .to()
+
+		"Hello".intersect("World") -> "lo", i.e. the characters that are common to the two strings.
+
+	In this example, the java.lang.String is implicitly converted into a StringOps object
+
+- Conversion is performed using methods, not casts.
+
+	"123".toInt -> the integer 123.
+
+- Operators are actually methods, i.e.:
+	
+	a + b is a shorthand for a.+(b), but there are no ++ or -- operators in scala!!
+
+- Scala has functions, in addition to methods.
+	
+	e.g.:
+
+		import scala.math._ 		// _ is a wildcard, much like * in java
+
+		sqrt(4) -> 2
+		pow(2, 4) -> 16
+		min(3, Pi) -> 3.0
+
+- Scala has no static functions, but classes usually have a companion singleton object, where most static-like functionality is placed.
+
+- Methods without arguments often don't use () (but usually only those methods who don't modify the object.)
+	i.e.: "asdfg".distinct -> this is a method that yields the distinct letters in a string.
+
+- In Scala, it is common to use a syntax that is similar to a function call
+	
+		"Hello"(4) -> 'o'. This is the result of the overloaded method apply(n: Int): Char from StringOps
+
+		Using the companion object apply method is a common scala idiom for constructing an object of the corresponding type:
+			Array(1, 4, 9, 16)
+
+- Some methods have as arguments other methods:
+
+		def count(p: (Char) => Boolean) : Int Count takes a predicate p, and it will count all the characters in the string that pass.
+		
+		e.g.: "Hello World Program".count(c => c.isUpper) -> 3
+
+- Generating a random file/folder name example:
+		BigInt.probablePrime(100, scala.util.Random).toString(36) -> generates a random prime, on up to 100 bits, and converts it to base 36.
+
+- Grabbing the first/last characters in a string is done as follows:
+	val myString: String = "Examp"
+		myString(0) -> 'E'
+		myString(myString.length - 1) -> 'p'
+
+- the StringOps class declares some useful functions, such as:
+		-> take, takeRight -> fetches the first n characters starting from left/right
+		-> drop, dropRight -> returns the remaining string after eliminating the first n characters, starting from left/right
+
+- the if/else structure yields a value, and it can be used to initialize variables as follows:
+	val s = if(x > 0) 1 else -1 -> the value of s will depend on x.
+	if(x > 0) s = 1 else s = -1 -> in this case, s cannot be a val anymore.
+
+- every expression has a type:
+	if(x > 0) 1 else -1 -> in this case, the type of the expression is Int, because both branches evaluate to an Int value.
+	if(x > 0) "positive" else -1 -> in this case, the type of the expression is the common supertype of the two yielded types, 
+		and in the case of java.lang.String, and Int, this will be Any.
+
+	if the else part is ommited, the expression may have no value. But in scala, everything evaluates to a value, and this is finessed 
+	by introducing a Unit (which is the type void) on the else branch.
+	Therefore, an if without an else will become:
+
+			if(x > 0) 1 else ()
+
+- a {} block delimits a sequence of expressions, whose value is that of the last expression executed within that block.
+
+	It comes in handy, if the initialization of a variable takes more than one step, i.e.:
+
+			val distance = { val dx = x - x0; val dy = y - y0; sqrt(dx * dx + dy * dy) }
+
+		in the above example, as dx and dy were only required for the initialization of distance, they will not be visible to the outer program.
+
+- an assigment will return a value of the type Unit, and as such, assigments can't be chained
+	
+			x = y = 1 // will assign () to x.
+
+- there is no direct analog of the classical for loops in scala, but there is a while, and this for loop:
+	
+		for(i <- 1 to n) {
+			r = r * i
+		}
+
+	the method 1 to n returns a Range of numbers 1 to n (inclusive), from the class RichInt.
+
+	the construct for(i <- expr) makes the value i traverse each value of the expr. Exactly how traversal works depdens on the type of the expression.
+
+- there is no val/var before the variable in the for construct. the type of the variable is the type of the elements of the collection.
+
+- when traversing a string, or an array, a sequence from 0 to n-1 is often required, rather than 1 to n inclusive.
+In that case, the "until" construct is useful
+
+		val s = "Hello"
+		for(i <- 0 until s.length) // from 0 to s.length - 1 inclusive.
+
+	in the above example, a interation using a numeric iterator is not actually required, instead a char can be used directly
+
+		val s = "Hello"
+		for(ch <- s) // will iterate through each letter.
+
+
+- loops are not used that often in Scala. Options for breaking out of a loop include:
+	1) using a Boolean variable
+	
+	2) using nested functions -> can return from the middle of a function
+
+	3) use the break method in the Breaks object.
+
+		import scala.control.util.Breaks._
+
+		breakable {
+			for(...) {
+				if(...) break; // exits the breakable block
+				...
+			}
+		}
+
+		Here, the control transfer is done by throwing, and catching an exception, so this should be avoided if performance is critical.
+
+- Multiple generators can be used in for loops in scala.
+	
+	for(i <- 1 to 3; j <- 1 to 3) {
+		print(10 * i + j + " ")
+	}
+
+	// this will print 11 12 13 21 22 23 31 32 33
+	-> the generators are nested using their definition order (i.e. the example above is for(i) { for(j) { } })
+
+- each generator can have a guard, like so:
+	for(i <- 1 to 3; j <- 1 to 3 if i!= j) {
+		print(10 * i + j + " ")
+	}
+
+- there can be arbitrarily many definitions, even introducing variables that can be used inside the loop body
+	for(i <- 1 to 3; from = 4 - i; j <- from to 3){
+		// ...
+	}
+
+- when the body of the for loop starts with the "yield" keyword, then the loop will generate a collection of values, one per iteration.
+
+	for(i <- 1 to 5; c <- "Hello") yield c
+	res6: scala.collection.immutable.IndexedSeq[Char] = Vector(H, e, l, l, o, H, e, l, l, o, H, e, l, l, o, H, e, l, l, o, H, e, l, l, o)
+
+	for(c <- "Hello"; i <- 1 to 5) yield c
+	res7: String = HHHHHeeeeellllllllllooooo
+	 
+	the type of each element is compatible with the first generator. This type of for is called a for comprehension.
+
+- alternatively, the generators, guards, and definitions of the for loop can be enclosed into braces, separated by newlines.
+	
+	for { i <- 1 to 3
+		from = 4 - i
+		j <- from to 3
+	}
+
+- in addition to methods, scala has functions. Methods operate on objects, but functions do not. a function definition is:
+		
+			def function_name([parameter_name: parameter_type])[: return_type] = { function_body } 
+
+	Unless the function is recursive, the return type need not be mentioned, as it can be inferred from the function body.
+	A function such as:
+
+		def func(x: Int) = {
+			if(x < 0) 
+				"Negative" 
+			else 
+				x
+		}
+
+	Will have a return type of type Any, which is the common supertypes of java.lang.String, and Int.
+
+- While there is nothing wrong in returning from a named function, when used within the body of an anonymous function, a return statement will cause a function break to the nearest enclosing named function.
+
+- functions can be defined using named parameters, and they can be also initialized to default values, but function calls can also
+explicitly set those parameters
+
+	def decorate(str: String, left: String = "[", right: String = "]") = left + str + right
+
+	can be called as: decorate(left = "<<<", str = "Hello", right = ">>>")
+					  decorate("Hello", "<<") // left == "<<", right == "]"
+
+- If a function must take a variable number of arguments, this can be done by using a sequence
+
+	def sum(args: Int*) = {
+		var result = 0
+		for (arg <- args) 
+			result += arg 
+		result
+	}
+
+	The Int* type specifies that this will be a sequence, converted at call time. The following call will fail:
+
+			val s = sum(1 to 5) // because 1 to 5 is already a sequence, and this must be made explicit
+			val s = sum(1 to 5: _*) // this tells the compiler that the parameter is to be considered a sequence.
+
+	this comes in handy when implementing recursive functions:
+
+			def recursiveSum(args: Int*): Int = {
+     			if(args.length == 0) {
+	     			println("Done adding!")
+	     			0
+     			} else {
+	     			println("Adding " + args.head)
+	     			args.head + recursiveSum(args.tail: _*)
+     			}
+ 			}
+
+ 	In this last example, args.head is the first element (in this case an Int), and args.tail is the rest of the elements, which is again a sequence, meaning that we must inform the compiler of this fact.
+
+ - scala has a special notation for a function/method that returns nothing. Instead of having Unit as the specified return type, the equals can be omitted from the function definition. Such a function is called a "procedure", only useful for its side effects.
+
+ 			def procedure() {
+ 				println("Only side effects")
+ 			}
+
+		alternatively:
+
+			def procedure(): Unit = {
+				// Side effects...
+			}
+
+- When a val is declared as lazy, its initialization is deferred until the first time it is accessed 
+
+			lazy val words = scala.io.Source.fromFile("/usr/share/dict/words").mkString
+
+	If the program never accessed the val words, the file would never be opened. This can be proven by trying to read an inexistent file, and see that only upon accessing it the error is reported.
+
+	Lazy variables are useful for delaying costly initialization statements, and they can also deal with other initialization issues, such as circular dependencies. They are essential in developing lazy data structures (e.g. Streams).
+
+- lazy values can be thought of as the middle ground between a val and a def.
+
+			val result = x + y 		// will be initialized to x + y as soon as it is declared.
+
+			lazy val result = x + y // will be initialized to x + y as soon as it is accessed (x, y may change in between)
+
+			def result = x + y 		// will always be re-evaluated.
+
+	
+	HOWEVER: laziness is not cost-free. Every time that a lazy val is accessed, a method is called that checks, in a thread-safe manner, if the val was already
+
+- Exceptions in scala work the same way as in java, but scala has no checked exceptions, so no method will declare that it throws anything. A throw expression has the special type Nothing, which is useful in if/else expressions.
+	
+	If a branch has Nothing as a type, the type of the whole expression will be the type of the other branch.
+	The syntax for catching exceptions is modeled after pattern matching syntax:
+
+			try {
+				process(new URL("http://horstmann.com/fred-tiny.gif"))
+			} catch {
+				case _: MalformedURLException => println("Bad URL: " + url) 
+				case ex: IOException => ex.printStackTrace()
+			}
+
+----- Chapter 2 exercises:
+	
+	1)
+		def signum(n: Int): Int = {
+			if(n < 0) 
+				-1 
+			else if(n == 0) 
+				0 
+			else 
+				1
+    	}
+
+	2) 
+		{}.getClass
+		Class[Unit] = void
+
+	3)
+		def x = y = 1
+
+	4) 
+		for(x <- 0 to 10) println(10 - x)
+
+	5)
+		def countdown(n: Int) {
+		    if(n > 0) {
+		    	for(i <- 0 to n) println(n - i)
+		    } else {
+		    	for(i <- n to 0) println(i)
+		    }
+    	}
+
+	6)
+		var res = 1
+		for(c <- "Hello") 
+			res *= c.charValue
+
+	7)
+		var res = 1
+		"Hello".foreach(ch => res *= ch)
+
+	8)
+		def product(s: String): Int = {
+		    var res = 0
+		    res = 1
+		    s.foreach(ch => res *= ch)
+		    res
+	    }
+
+	9)
+		def productRec(s: Char*): Int = {
+			if(s.length == 0) {
+		     	return 1
+		    } else {
+			     return s.head * productRec(s.tail: _*)
+		    }
+	     }
+
+	10)
+
+	Write a function that computes xn, where n is an integer. Use the following recursive definition:
+		• xn = y2 if n is even and positive, where y = xn / 2.
+		• xn = x· xn – 1 if n is odd and positive. 
+		• x0 = 1.
+		• xn = 1 / x–n if n is negative.
+		Don’t use a return statement.
+
+
+		def customPow(x: Double, n: Int): Double = {
+			if(n > 0) {
+				if(n % 2 == 0) {
+					val y = customPow(x, n / 2)
+					y * y
+				} else {
+					x * customPow(x, n - 1)
+				}
+			} else if(n == 0) {
+				1
+			} else {
+				1 / customPow(x, -n)
+			}
+		}
+
+- Array is useful if the collection length will not change, and an ArrayBuffer otherwise.
+	Use:
+		for(el <- arr) ... to traverse the array.
+		for(el <- arr if ...) ... yield ... to filter out elements, and transform the array into a new one.
+		arr(i) to access elements
+	Don't use:
+		new when supplying initial values
+
+		
+		import scala.collection.mutable.ArrayBuffer
+
+		val b = new ArrayBuffer[Int]()
+		
+		b += 1
+		res3: b.type = ArrayBuffer(1)
+
+		b += (1, 2, 3, 5)
+		res5: b.type = ArrayBuffer(1, 1, 2, 3, 5)
+
+		b ++= Array(8, 13, 21)
+		res7: b.type = ArrayBuffer(1, 1, 2, 3, 5, 8, 13, 21)
+
+		b.trimEnd(5) // removes the last 5 elements from the end of the array.
+
+	Inserting at the end of an array is an amortized, constant time operation.
+	Inserting can also be done starting at a random index, but this is more costly, as all elements after that index must be shifted.
+
+		b.insert(2, 10, 11, 12) // inserts (10, 11, 12), such that 10 will be b(2)
+		b.remove(2) // will remove the element at index 2.
+		b.remove(2, 3) // will remove the first three elements starting from index 2.
+		// remove(i, count) will throw an IndexOutOfBoundsException if there are not enough elements to remove from the array, AND
+		// will not remove any elements!!
+
+- switching between an Array and an ArrayBuffer can be done by using the .toArray .toBuffer methods, respectively.
+
+- traversing an array can be done by using the until method in a for loop
+
+		for(i <- 0 until a.length) // until returns a range of 0 -> a.length - 1
+
+- 0 until 10 is actually a method of the RichInt class, namely 0.until(10)
+
+		for(i <- 0 until (10, 2)) print(i + " ") // every second
+		0 2 4 6 8 
+
+- to traverse starting from the end of the range, use (0 until a.length).reverse
+
+- yield generates a new array/arrayBuffer, matching the original collection type, but it doesn't mutate the original.
+
+		val a = Array(1, 2, 3, 4, 5)
+		
+		for(number <- a) yield {
+			2 * number
+		}
+
+		-> res2: Array[Int] = Array(2, 4, 6, 8, 10)
+
+- filtering out some elements from the original collection can be performed using a guard:
+						// guard if
+		for(number <- a if number % 2 == 0) yield { 2 * number }
+
+		-> res6: Array[Int] = Array(4, 8)
+
+- the alternative to this is the more functional filter + map:
+		
+		a.filter(_ % 2 == 0).map(_ * 2) // where _ is the anonymous variable
+
+- EXAMPLE: removing all but the first negative numbers from a given sequence. Since deleting from the front of an array is
+more costly, we should do it from the end.
+
+		val negativeIndexes = for(i <- (0 until b.length).reverse if(b(i) < 0)) yield i 
+						// will yield the indexes of the negative numbers in reverse order
+
+		for(j <- 0 until negativeIndexes.length - 1) 
+			c.remove(negativeIndexes(j))
+						// remove all the negative numbers, except the first, but starting from the end.
+
+- arrays declare some common utility functions, such as
+		
+		sum(works only for numeric types), max, min, sorted
+
+- sorted sorts an Array/ArrayBuffer, and returns it sorted, without modifying the original.
+
+- using scala.util.Sorting.quickSort, an Array (but not an ArrayBuffer can be sorted in place).
+
+
+		scala> val dimensions = Array("I", "G", "R")
+		dimensions: Array[String] = Array(I, G, R)
+
+		scala> val drivers = Array("AUT", "USA", "R4")
+		drivers: Array[String] = Array(AUT, USA, R4)
+
+		scala> dimensions
+					.zip(drivers)
+					.map((each) => each._1 + ":" + each._2)
+					.mkString("{ ", " ", " }")
+		res38: String = { I:AUT G:USA R:R4 }
+
+- declaring multi-dimensional arrays can be done using:
+		
+		val nDimensionalArray = Array.ofDim[ELEMENT_TYPE](dim1, dim2, dim3, ...)
+
+	accessing an element is done using
+		nDimensionalArray(i1)(i2)(i3)...
+
+- scala.collections.JavaConversions._ helps with Java interoperability, by wrapping scala Collections into java ones.
+
+----- Chapter 3 exercises:
+
+	1)
+		def randArray(n: Int) = {
+	    	val r = new scala.util.Random
+	    	for(i <- 0 to n) yield r.nextInt(n)
+    	}
+
+    2)
+    	def swapAdjacent(arr: Array[Int]): Array[Int] = {
+			for(i <- 0 until arr.length if i % 2 == 1) { 
+				val tmp = arr(i-1)
+				arr.update(i-1, arr(i))
+				arr.update(i, tmp)
+			}
+			arr
+		}
+
+	3)
+		for(i <- 0 until arr.length) {
+			if(i == arr.length - 1)
+				yield a(i)
+			if(i % 2 == 0) {
+				yield a(i + 1)
+			}
+			yield a(i - 1)
+		}
+
+	4)
+
+		import scala.collection.mutable.ArrayBuffer
+
+		val array = Array(0, -1, 3, -2, 5, 6, -8)
+
+		val buffer = array.filter(_ > 0).toBuffer; 
+		buffer.appendAll(array.filter(_ <= 0))
+
+		buffer: scala.collection.mutable.Buffer[Int] = ArrayBuffer(3, 5, 6, 0, -1, -2, -8)
+
+	5)
+		array.reduceRight(_ + _).toDouble / array.size
+
+
+	6)
+		array.sortWith(_ > _)
+
+	7) 
+		array.toSet
+
+	9)
+		java.util.TimeZone.getAvailableIDs.filter(_.startsWith("America/")).map(_.replace("America/","")).sorted
+
+
+- Using the plain Map(K -> V, K -> V, ...) constructor will yield an immutable map.
+- For a mutable version, scala.collection.mutable.Map(K -> V) is to be used.
+
+- In scala, a Map is actually a collection of pairs (the -> operator creates a pair). A pair is a grouping of two values (not necessarily of the same type)
+	
+	Therefore the map definition can be supplied using
+
+			(K, V) or K -> V notation.
+
+- Accessing the value associated to a key, one can use:
+	
+		map(K) // but this throws an exception, if the key does not exist.
+
+		map.get(K) // this returns an Option, which may contain a Some (value), or a None.
+
+		map.getOrElse(K, fallback) // if the map contains K, its associated value is returned, else the fallback result will be returned.
+
+- Updating values of a mutable map can simply be done by using:
+		
+		map(K) = V // this will add the key/value pair K/V, if the mapping doesn't exist already, otherwise only the value is updated.
+
+
+- Alternatively, map += ("Bob" -> 5, "Fred" -> 7) can be used to add multiple entries.
+
+- Removing a key can be done using map -= "Alice" // this will remove the key "Alice", and its associated value from the map.
+
+- An immutable map cannot be updated, but a new copy, containing additional entries can be created as follows:
+
+		val newMap = oldImmutableMap + ("Bob" -> 7, "Fred" -> 4)
+
+- Similarily, the "-" operator will yield a new map, with the specified entry removed.
+
+- Creating new maps like this is not inefficient, as they can share most of their structure (since they are all immutable).
+
+- Iterating over an EntrySet can be done using pattern matching inside a for:
+	
+		for((k, v) <- map) {
+			// process k, v
+		}
+
+- Swapping the keys for the values can be performed using a for/yield:
+
+		for((k, v) <- map) yield (v, k)
+
+	however, as keys must be unique, some entries may be lost (in the case of values duplication), e.g.:
+
+		val map = Map("Bob" -> 5, "Bill" -> 7, "Mike" -> 10, "Cindy" -> 7)
+
+		for((k, v) <- map) yield (v, k)
+		res5: scala.collection.immutable.Map[Int,String] = Map(5 -> Bob, 7 -> Cindy, 10 -> Mike)
+
+- import scala.collection.JavaConversions.mapsAsScalaMaps will ensure conversion of java maps to scala maps:
+
+		val scores: scala.collection.mutable.Map[String, Int] = new java.util.TreeMap[String, Int]
+
+- conversely, import scala.collection.JavaConversions.mapsAsScalaMaps will allow passing a scala map as a parameter to a function expecting a java map.
+
+
+- Tuples represent aggregates of values of different types.
+	Accessing individual elements of the tuple can be done by pattern matching:
+		
+		val tuple = ("First", "2nd", 3, 4.15)
+		tuple: (String, String, Int, Double) = (First,2nd,3,4.15)
+
+		scala> val (str, _, _, dbl) = tuple
+		str: String = First
+		dbl: Double = 4.15
+
+	Or by using the ._n notation, where n represents the nth member of the tuple. Tuples are 1-based indexed.
+
+- tuples are useful for functions that return multiple values, for example partition, belonging to StringOps, which takes in a predicate, and will split the string into the bits that match the predicate, and those that do not, e.g.:
+
+		"New York".partition(_.isUpper)
+		res23: (String, String) = (NY,ew ork)
+
+- one of the reasons for using tuples is to bundle values together, so that they may be processed together. This is commonly the case with the zip method
+
+		val symbols = Array("<", "=", ">")
+		val counts = Array(2, 10, 2)
+
+		for((s, c) <- symbols.zip(counts)) print(s * c) 
+		// will print "<<==========>>"
+
+- the toMap method will turn a zipped collection of (K, V) into a map:
+		
+		keys.zip(values).toMap
+
+
+----- Chapter 4 exercises:
+
+	1) 
+		val prices = Map("Macbook" -> 6000, "Asus" -> 2500, "Alienware" -> 10000)
+		val discountedPrices = for((k, v) <- prices) yield (k, v - 10/100.0 * v)
+
+	2)
+		val wordsHistogram = scala.io.Source
+				.fromFile("/Users/florinbarbuceanu/Desktop/thoughts.txt", "UTF-8")
+				.getLines
+				.flatMap(_.split("\\W+"))
+				.foldLeft(Map.empty[String, Int]) 
+				{ (count, word) => count + (word -> (count.getOrElse(word, 0) + 1)) }
+
+				// foldLeft takes an initial accumulator, and a function. The function takes the accumulator so far as its first
+				// parameter, and the current value as its second. count: Map[String, Int], word: String.
+
+		for((w, c) <- wordsHistogram) println(w + ": " + c)
+
+	8)	
+		  def minmax(arr: Array[Int]) = {
+		    arr.foldLeft(Int.MaxValue -> Int.MinValue) { 
+		    (acc, curr) => (if (acc._1 > curr) curr else acc._1) -> (if (acc._2 < curr) curr else acc._2) 
+		    }
+		  }
+
+
+- fields in classes automatically come with getters/setters.
+
+- a field can be replaced with custom getters/setters without changing the client of class (uniform access principle)
+
+- the @BeanProperty annotation will generate Java-style getters/setters (getXxx/setXxx)
+
+- every class has as default constructor that is "interwoven" with the class definition. Its parameters become the fields of the class.
+
+- the primary constructor also executes all the statements inside the body of the class.
+
+- classes must not be declared as public, because by default they are public. A single scala source file may contain multiple public classes
+
+- parameterless method calls may or may not include the (). It is considered good practice to use the () for mutator methods (i.e. those that change the state of the object), and drop them for accessor methods.
+
+- inclusion or exclusion of the parantheses can be enforced in the class definition
+
+	e.g.:
+		class Counter {
+		  private var value = 0;
+
+		  def increment() = { value += 1 } // must be called as .increment()
+		  def current = values // must be called as .current
+		}
+
+- a getter/setter pair on a private field in Java is called a property.
+
+- declaring a class as:
+
+	class Person {
+		var age = 0
+	}
+
+	will make the scala compiler generate a JVM class with a field that is private, and a public getter/setter pair (because age was not declared private).
+
+- the name of the getter/setter pairs will respect the following convention:
+	
+	.<field_name> for the getter, and .<field_name>_= for the setter.
+
+- therefore, whenever an assignment is made to an instance of such class, under the hood there will be a method call to .<field_name>_=(other: <field_type>)
+
+- generation can be controlled, however:
+	
+	-> if the field is private, the getter/setter are also private.
+	-> if the field is a val, only the getter is generated
+	-> in order to skip the generation of the getter/setter pair, the field must be declared as private[this]
+
+- in order to keep a field that can be mutated, a private var is to be used instead. This implies creating a public method that mutates the internal variable.	
+
+- scala does not support write-only properties (i.e. setter only).
+
+- a field in a scala class is not the same as a Java/C++ field. It is a private field TOGETHER with a getter (for a val), and with a getter, and a setter (for a var).
+
+- in scala, just like in Java/C++, a method may access the private fields of objects of its class.
+
+- however, a more restricted visibility is possible, and this is declaring a field private[this], which will make it visible only from within the same OBJECT INSTANCE. This access is called "object-private". With a class-private field, scala generates a private getter/setter pair, but for an object-private field no getters/setters are generated at all.
+
+- scala allows declaring a field as visible only to specific enclosing classes, for instance (by using private[ClassName]). Under the hood, this will generate a public getter/setter auxiliary pair, in order to facilitate the access of the enclosing class, because the JVM does not provide such fine-grained access control.
+
+- since many java tools rely on the javabeans properties, scala allows automatic generation of such a pair, i.e.:
+
+		import scala.reflect.BeanProperty
+
+		class Person {
+			@BeanProperty var name: String = _
+		}
+
+	this will generate four methods:
+		-> name: String
+		-> name_=(newValue: String): Unit
+		-> getName(): String
+		-> setName(newValue: String): Unit
+
+- a class may have one or more constructors, BUT one is a primary constructor, and all the rest are auxiliary ones. The auxiliary constructors are called this, and they must start with a call to another already defined constructor, or the primary constructor.
+		
+		class Person {
+			private var name = ""
+			private var age = 0
+
+			def this(name: String) { // auxiliary constructor
+				this()				// calls the primary constructor
+				this.name = name
+			}
+
+			def this(name:String, age: Int) {
+				this(name)
+				this.age = age
+			}
+		}
+
+	Constructing an instance of this class is as simple as:
+
+		val p1 = new Person // primary constructor
+		val p2 = new Person("Fred") // first auxiliary constructor
+		val p3 = new Person("Fred", 42) // second auxiliary constructor
+
+- The primary constructor is not defined using this(), but instead is woven in the class definition:
+		
+		class Person(val name: String, val age: Int) {
+			
+			println("A new person was constructed!")
+
+			//...
+		}
+
+- all other statements in the class definition are called when the primary constructor is called, i.e.:
+	using the class definition above,
+
+		val p = new Person("Fred", 42) // this will print "A new person was constructed!"
+
+- primary constructor parameters are turned into class fields, which are initialized with construction parameters.
+Also, the order of the parameters can vary, as long as the name of the parameters is specified, e.g.:
+
+		val p = new Person(age = 42, name = "Fred")
+
+- if no primary constructor is declared after the class definition, then a no-args primary constructor is generated, whose only purpose is to execute all the statements in the body of the class. This comes in useful for more complex initialization of fields, e.g.:
+
+		class MyProg {
+			val props = new Properties
+			props.load(new FileReader("myprog.properties"))
+				// the statement above is part of the primary constructor.
+		}
+
+- auxiliary constructors may be omitted by providing default values in a primary constructor, for those fields that may be absent.
+
+		class Person(val name: String = "", val age: Int = 0) {
+			// ...
+		}
+
+- any scala class is composed of the class definition, and the body of the primary constructor. A developer's job is to disentangle the two.
+
+- in order to make the primary constructor private, it must have the "private" keyword placed like this:
+
+		class Person private(val name: String, var name: age) {
+			// ...
+		}
+
+	a class user must, then, use one of the auxiliary constructors (if any) to create a Person class.
+
+- functions can be defined inside other functions, and classes within classes.
+
+- an inner class belongs to the instance, not to the enclosing class (i.e. companion object), therefore each instance of a class
+will provide a different type for a nested class.
+	
+		class Network {
+			class Member{
+				// ...
+			}
+			// ...
+		}
+
+		val facebook = new Network
+		val instagram = new Network
+
+		// in this case, facebook.Member != instagram.Member
+
+- there are two possible solutions to this problem:
+	1) declaring the member class in the Network companion object:
+		
+		class Network {
+			// ...
+		}
+
+		object Network {
+			class Member(val name: String) {
+				// ...
+			}
+		}
+
+	2) using a type projection inside the Member class:
+
+		import scala.collection.mutable.ArrayBuffer;
+
+		class Network {
+			class Member(val name: String) {
+				val contacts: ArrayBuffer[Network#Member] // can add any type of Member to this collection.
+			}
+		}
+
+	Type projection is not to be abused, and used everywhere, but only in particular cases where fine-grained "inner class per object" is required.
+
+- accessing the outer instance of an inner class can be done by using EnclosingClass.this, or by specifying an alias to this instance.
+
+		class Network { outer => 
+			class Member(val name: String) {
+				// ...
+			}
+
+			private val members = new ArrayBuffer[Member]
+
+			def join(name: String): Member = {
+				val newcomer = new Member(name)
+				members += newcomer
+				newcomer
+			}
+		}
+
+		val m = new Network().join("Joshua")
+
+		m.outer.members // access members of the enclosing instance.
+
+		m.Network.this // same thing
+
+----- Chapter 5 exercises:
+	1) change the Int field to BigInt
+
+	2) 
+
+- Having a companion object to the class implies these two be in the same file, and another thing to consider is that the static methods from the companion object are NOT in scope in the class instances, i.e.
+
+		object Account {
+			def exampleMethod() ...
+		} 
+
+		class Account {
+			exampleMethod() 		// this is wrong, as the method is not in scope.
+			Account.exampleMethod() // correct
+		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

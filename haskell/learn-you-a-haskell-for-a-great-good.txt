@@ -1,0 +1,19 @@
+### Introduction
+
+- Referential transparency - when a function is called twice with the same parameters, it is guaranteed to return the same result. This allows the compiler to reason about the program's behaviour.
+
+- Haskell is lazy by default. Programs in Haskell are a series of transformations on data.
+
+- consider having an immutable list of numbers xs = [1, 2, 3, 4], and a function doubleMe, which multiplies every element by 2 and then returns a new list.
+		
+		doubleMe(doubleMe(doubleMe(xs)))
+
+- no usage of the result means it won't be evaluated. But once the result is required, the outermost call demads the result of the next call, which propagates to the innermost call. This results in a single pass through the list, where the innermost function returns a 2 as a two element, which the second function doubles, and so on.
+
+- Haskell is statically typed.
+
+### Starting Out
+
+		:set prompt "ghci> " -- this will set the prompter text to the supplied string parameter.
+
+		5 / 2 -- this results in 2.5, so integer division is not the default one
