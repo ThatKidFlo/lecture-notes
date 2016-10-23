@@ -84,4 +84,100 @@ This is because every expression or function must return something.
 
 	is called a definition (or a name).
 
-- because changing what names (and functions mean) once they have been defined, str and the world "hello world" can be used interchangeably.
+- because changing what names (and functions mean) once they have been defined, str and the string "hello world" can be used interchangeably.
+
+-- Lists
+
+- lists are a homogenous data structure (meaning that they store elements of the same type)
+
+- the let keyword can be used in the interpreter to bind a value to a name.
+		
+		let a = 1 -- this is equivalent to doing a = 1 in a script, and then loading it.
+
+- strings are just lists of characters. (this means that string literals are just syntactic sugar for their list equivalent)
+
+		[1, 2, 3] ++ [4, 5, 6] -- list concatenation => [1, 2, 3, 4, 5, 6] 
+
+- this operator is actually similar to append from lisp, meaning it should be O(n), where n is the size of the left operand. This can be very costly, especially for repeated string concatentation. (e.g. accumulator + "short text")
+
+		'A' : ['B', 'C'] -- cons operation => ['A', 'B', 'C']
+
+- the cons operator takes an element as its left operand, and a list as right operand, and adds the element to the beginning of the list.
+
+		[1, 2, 3] -- is actually just syntactic sugar for 1:2:3:[], where [] is the empty list.
+
+- accessing an element by its index is done using the '!!' operator. List indexes are zero-based.
+		
+		[1, 2, 3] !! 1 -- yields 2.
+		[1, 2, 3] !! 3 -- index too large exception
+		[1, 2, 3] !! (-11) -- negative index exception.
+
+- reminder:: unlike lisp, haskell is strongly typed, and therefore something like
+		
+		let a = [1, 2, 3]
+		[4, 5] : a -- will not work, since the types do not align. Nesting lists inside of lists implies that the holder contains list-type elements, i.e.
+
+		let b = [[1], [2, 3]]
+		[4, 5] : b -- this will work.
+
+		-- likewise, in the case of b, for the ++ operator
+		b ++ [5, 6] -- invalid
+		b ++ [[5, 6]] -- valid
+
+- lists can be compared, if the things they contain can be compared. When using the '<', '<=', '>', '>=' operators, the lists are compared in lexicographical order. This means their heads are compared, and if equal, comparison wil recur for the tails, until a decision can be reached.
+
+- the functions 'head' and 'tail' take a list argument, and their behaviour is self-explanatory.
+		
+		head [1, 2, 3] -- => 1
+		tail [1, 2, 3] -- => [2, 3]
+
+- the functions 'last', and 'init' are head, and tail mirrored
+		
+		last [1, 2, 3] -- => 3
+		init [1, 2, 3] -- => [1, 2], i.e. but-last semantics.
+
+- 'length' returns the element count of a list. 'null' tests whether a list is empty. 'reverse'.. well.. obviously
+
+		length [1, 2, 3] -- => 0
+		null [1, 2, 3] -- => False. This is a check for the empty list.
+		reverse [1, 2, 3] -- => [3, 2, 1]
+
+- 'take' takes two parameters, a number, and a list, and extracts the first <number> elements from the list.
+	-> if the number is greater than, or equal to the list length, it just returns the list.
+	-> if the number is lower than the list length, but greater than zero, it returns the sublist described by the interval of indexes [0.. number)
+	-> if the number is lower or equal to zero, the empty list is returned.
+
+		take 3 [1, 3, 4, 5, 6] -- => [1, 3, 4] (indexes 0 -> 2)
+
+- 'drop' works exactly like take, but it drops the first <number> elements from the initial list.
+		
+		drop (-1) [1, 2, 3] -- => [1, 2, 3]
+		drop 2 [1, 2, 3] -- => [3], i.e. drop until index 2 (non-inclusive)
+
+- 'minimum', and 'maximum' are self-explanatory, but like head, tail, last, init, they throw an exception, if called on an empty list.
+
+- 'sum', and 'product' both operate on lists of numbers, and return the lists' sum, and product, respectively.
+		
+- 'elem' takes an element, and a list of elements and tests whether the first argument is part of the list. Oftenly, it is called using the infix syntax.
+		
+		elem 2 [1, 2, 3] -- True
+		2 `elem` [1, 2, 3] -- equivalent to the first.
+
+-- Ranges
+- The syntax for ranges is pretty similar to the one for lists.
+
+		[1..20] -- generates [1, 2, 3, ..., 20], i.e. the sequence of numbers from 1 to 20, with the implicit step 1
+		[2, 4 .. 20] -- generates [2, 4, ..., 20]
+		[3, 6 .. 20] -- generates [3, 6, ..., 18]
+		['a' .. 'z']
+
+		[20 .. 1] -- will generate an empty list, which is correct behaviour.
+		[20, 19 .. 1] -- will generate all the numbers from 20, down to 1.
+
+- floating point numbers should be avoided in sequences, because their representation is not completely precise (=> can yield some unexpected sequence members)
+
+- ranges can also be used to generate infinite lists. 
+		
+		[13, 26 .. 24 * 13] -- the first 24 multiples of 13
+		take 13 [13, 26 ..] -- the more elegant way
+- because Haskell is lazy, the infinite range will not be evaluated (because it will never finish), but rather only evaluate the first 24 elements of the sequence, because these are the required ones.
