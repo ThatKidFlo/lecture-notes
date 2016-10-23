@@ -1,4 +1,5 @@
-### Introduction
+Introduction
+======
 
 - Referential transparency - when a function is called twice with the same parameters, it is guaranteed to return the same result. This allows the compiler to reason about the program's behaviour.
 
@@ -12,7 +13,8 @@
 
 - Haskell is statically typed.
 
-### Starting Out
+Starting Out
+======
 
 		:set prompt "ghci> " -- this will set the prompter text to the supplied string parameter.
 
@@ -86,7 +88,8 @@ This is because every expression or function must return something.
 
 - because changing what names (and functions mean) once they have been defined, str and the string "hello world" can be used interchangeably.
 
--- Lists
+Lists
+------
 
 - lists are a homogenous data structure (meaning that they store elements of the same type)
 
@@ -163,7 +166,8 @@ This is because every expression or function must return something.
 		elem 2 [1, 2, 3] -- True
 		2 `elem` [1, 2, 3] -- equivalent to the first.
 
--- Ranges
+Ranges
+------
 - The syntax for ranges is pretty similar to the one for lists.
 
 		[1..20] -- generates [1, 2, 3, ..., 20], i.e. the sequence of numbers from 1 to 20, with the implicit step 1
@@ -180,4 +184,75 @@ This is because every expression or function must return something.
 		
 		[13, 26 .. 24 * 13] -- the first 24 multiples of 13
 		take 13 [13, 26 ..] -- the more elegant way
+
 - because Haskell is lazy, the infinite range will not be evaluated (because it will never finish), but rather only evaluate the first 24 elements of the sequence, because these are the required ones.
+
+- 'cycle' takes a list and cycles its contents into an infinite list.
+		
+		take 5 (cycle [1, 2, 3]) -- => [1, 2, 3, 1, 2]
+		take 11 (cycle "LOL") -- => "LOL LOL LOL"
+
+- 'repeat' takes a single element, and produces an infinite list of that element.
+	
+		take 7 (repeat "L") -- => "LLLLLLL"
+
+- 'replicate' behaves much like repeat, but it also takes, as a first parameter, the repetition count.
+
+		replicate 5 10 -- => [10, 10, 10, 10, 10]
+
+List comprehension
+------
+
+- The typical mathematical `set comprehension` looks like:
+
+		S = { INPUT_TRANSFORMATION [2 * x] | INPUT_SET x e N, PREDICATE x <= 10}, where N is the input set, and x <= 10 is the predicate.
+
+- List comprehensions in Haskell are pretty similar to the standard mathematical notation:
+		
+		[x * 2 | x <- [1 .. 10]] -- this means that for every element in [1 .. 10], bound to the name x, apply f(x) = x * 2
+
+- just like in the mathematical notation, the predicate goes after the input set.
+		
+		[x * 2 | x <- [1 .. 10], x `mod` 2 == 0] -- considers only the even numbers in the range.
+		[x * 2 | x <- [1 .. 10], x * 2 >= 12] -- considers only the numbers whose double are greater than 12.
+
+- the operation by which some elements are excluded from a list (using a predicate), is called filtering.
+
+		boomBangs xs = [if x < 10 then "BOOM!" else "BANG!" | x <- xs, odd x]
+		boomBangs [1, 2, 3] -- => ["BOOM!","BOOM!"]
+		boomBangs [1, 2, 3, 11, 12, 13] -- => ["BOOM!","BOOM!","BANG!","BANG!"]
+
+- a list comprehension can have multiple comma-separated predicates, and an element will only be included the resulting list if it satisfies all predicates:
+		
+		[x | x <- [1 .. 20], x /= 13, x /= 15, x /= 17] -- only numbers that are not 13, 15, or 17 will pass.
+
+- a list comprehension can also draw values from multiple sources. This will produce all possible combinations from the given lists, if no predicate is specified. (drawing from two lists, of sizes n, and m, respectively, will produce an output of m * n, if no filtering is applied)
+
+		[x * y | x <- [1 .. 5], y <- [5 .. 19], x == y] -- yields [25]
+
+- '_' is an anonymous variable, useful when the extracted value from a list is not used.
+
+- Since strings are lists, comprehensions can be used to produce and consume strings.
+
+- nested comprehensions can also be written, if the list contains nested lists.
+
+Tuples
+------
+
+- Tuples are pretty much like lists, with a few fundamental differences:
+	-> lists have a single type, where tuples can have n-types, corresponding to its n-elements (=> tuples are not homogenous)
+
+		("One", 2, 't', 'h', 'r', 'e', 'e') -- a tuple with 7 elements (a string type, a number type, and 5 character types)
+
+- a tuple's type is dictated by the number of elements it has, as well as the types (and their order!) it contains.
+		
+		[(1, 2), (3, 4), (5, 6, 7)] -- this is an error, because of the third element.
+
+- Tuples can also contain lists.
+
+- tuples are more rigid than lists, because appending something to a tuple would mean changing its type, and, therefore, such functions can't be as general as the list cons or append.
+
+- there can't be a singleton tuple, unlike a singleton list.
+
+- Tuples can be compared to each other if their elements can be compared (like in the case of lists), AND only if they have the same size.
+
