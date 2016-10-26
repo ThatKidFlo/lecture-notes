@@ -18,3 +18,5 @@ length' xs = sum [1 | _ <- xs]
 removeNonUppercase xs = [x | x <- xs, x `elem` ['A' .. 'Z']]
 
 removeOdds nestedlists = [[x | x <- lst, even x] | lst <- nestedlists]
+
+rightTriangles = [(a, b, c) | a <- [1 .. 10], b <- [1 .. c], c <- [1 .. b], c ^ 2 + b ^ 2 = a ^ 2]

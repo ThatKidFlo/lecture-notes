@@ -256,3 +256,64 @@ Tuples
 
 - Tuples can be compared to each other if their elements can be compared (like in the case of lists), AND only if they have the same size.
 
+- the 'fst', and 'snd' functions take as parameter a pair (2d tuple), and return its first, or second element, respectively.
+
+- zip takes as arguments two lists, and produces a list of pairs from their contents, cut off to match the size of the smaller list.
+		
+		zip [1, 2, 3, 4] ['a', 'b', 'c'] -- => [(1,'a'),(2,'b'),(3,'c')]
+
+Types and Type classes
+========
+
+- in the interpreter, the ':t' command will evaulate its argument (an expression), and yield its type.
+		
+		the interpreter response will be <expr> :: <type>
+
+- the '::' part in the response means 'has type of'
+
+- functions also have types, and it is generally good practice to make those types explicit, except in the case of very short functions.
+
+		<functionName> :: <typeDefintion>
+
+		removeNonUpperCase :: String -> String
+		removeNonUpperCase str = [c | c <- str, c `elem` ['A' .. 'Z']]
+
+- a function that takes multiple parameters will be curried by default, e.g:
+
+		let sumThree x y z = x + y + z
+		:t sumThree -- => Num a => a -> a -> a -> a
+
+		let sumTwo x y = sumThree 0 x y -- Num a => a -> a -> a
+		let sumTwoPartial = sumThree 0 -- Num a => a -> a (partial function)
+
+- Types are written in capital case.
+
+- common haskell numeric types:
+
+		Int -- represents a normal, bound integer. (hardware-dependent)
+		Integer -- represents an unbound integer. (less efficient than Int, obviously)
+		Float
+		Double
+		Bool
+		Char
+		[Char] <=> String
+		() -- empty tuple, having the single value ()
+		an infinite amount of tuples, depending on size, and their types.
+
+Type variables
+-------
+
+- as previously stated, the 'a' in the :t response is not a type, because it is nto written in capitals. It actually represents a type variable, meaning it could be of any type. This is pretty much like generics in other languages.
+
+- functions that have type variables are called polymorphic functions. (head, fst are examples of such functions)
+
+Type classess
+-------
+
+- type classes are like interfaces in Java, in the sense that they state down some common behaviour in all those implementing them. (or, rather, belong to a specific type class).
+
+- in the :t response, the part(s) before => are type class constraints.
+
+- basic typeclasses:
+		
+		Eq -- used for types that support equality testing. All standard haskell types belong to this class.
