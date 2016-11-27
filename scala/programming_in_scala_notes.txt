@@ -1,0 +1,466 @@
+- a symbol in scala is declared as 'ident (where ident is the symbol name). They are not widely used, as one can only find their name (also they are internalized, so it may come in handy for string comparisons, as not all strings are interned in scala).
+
+- general rule for scala: an infix operator will cause a method call on the LHS object, UNLESS the operator ends in ':'.
+
+	e.g for list creation
+
+		2 :: 3 :: 4 :: Nil -> since Int does not have the .::(..), this means that the actual call is Nil.::(4).::(3).::(2), resulting in the list [2, 3, 4]
+
+- operators in scala are methods, so 1 + 2 means (1).+(2) (the Int type exposes a method called +, which has multiple overloadings - for int, long, etc.)
+
+- operator notation is not limited to methods that look like operators. In scala, any method can be used in operator notation, e.g.:
+		
+		"abcd" indexof 'c'
+
+- when using operator notation with a method that takes more than one parameter, the parameters should be enclosed in ().
+	
+		"abcd".indexOf('c', 1)		// in this case, indexOf is not an operator
+		"abdc" indexof ('c', 1) 	// in this case it is an operator, because it is used like one (infix)
+
+- scala also supports pre- and post-fix operators, and these are represented by methods named unary_<operator>.
+
+- for prefix notation, only the symbols !, ~, +, - can be used.
+
+- post-fix methods are methods that take no arguments, and for which the parantheses can be skipped, in case they yield no side-effect.
+		
+		"Test string" toLowerCase instead of "Test string".toLowerCase
+		Console println instead of Console.println()
+
+- the equality operator (==) will call the equals method of the corresponding type as deducted from the expression.
+		
+		List(1, 2, 3) == List(1, 2, 3) 		// will yield true, as it calls .equals() on the first parameter.
+
+		null == List(1, 2, 3) 				// will yield false, as the == operator performs a check for the left-hand side of the expression, and equals is called on the right-hand side instead.
+
+		null == null 						// will yield true, but generates a compiler warning.
+
+- in scala, as in java, == on primitive types will check for value equality, and in case of objects, scala's == will look at deep (equals) equality, unlike the java reference equality. Compatibility with java equality is provided via the .eq() and .ne() methods, but these are only applicable to objects that map directly to Java objects
+
+- immutable objects tradeoffs:
+		1) immutable objects are easier to reason about.
+		2) immutable objects can be freely passed around, without the need of defensive copies.
+		3) immutable objects can't have their state corrupted if accessed concurrently from two threads.
+		4) immutable objects make perfect hash table keys, since if a (mutable) key is changed after insertion into a Hash Set, the entry may not be found when searched.
+
+		5) sometimes, immutable objects require a large object graph to be copied, when a simple update could have been performed instead.
+
+
+- scala does not require explicit constructors, as classes may receive (and implicilty declare) values for fields directly. Also, any code placed in the body of a class is compiled into the implicit constructor of the corresponding class.
+
+- the subtle difference between
+	val (r, k, p) = (new Rational(1, 3), new Rational(5, 6), new Rational(7, 8)) 		// in this case, the corresponding rational in the RHS matches the val on the LHS
+
+	val r, k, p = (new Rational(1, 3), new Rational(5, 6), new Rational(7, 8)) 			// in this case, however, EACH val will be a triplet, containing the three Rationals
+
+- the override keyword in front of a method definition implies that a previous method definition is overridden.
+		
+		e.g. 		
+			override def toString = // ...
+
+- a way to enforce preconditions is the use of the require method (belonging to the Predef companion object). This method comes in two variants, one taking just a boolean, and the other also accepting a message. In case the boolean supplied is false, it will throw an IllegalArgumentException, and (optionally) display the provided message. This can be weaved in the body of the implicit constructor as follows:
+
+		class Rational(n: Int, d: Int) {
+			require(d != 0, "Denominator must be non-zero!")
+		}
+
+- having these two parameters (n and d) just in the class method, and considering they are not used otherwise than in the constructor, scala will not generate fields for them. In order to make them accessible from outside, the rational class would have to be modified as follows:
+
+		class Rational(n: Int, d: Int) {
+			require(d != 0, "Denominator must be non-zero!")
+
+			val numerator: Int = n
+			val denominator: Int = d
+
+			// ...
+		}
+
+	This would enable read-only access to the numerator and denominator fields from outside the class body.
+
+- defining operators for the newly created Rational class is as simple as including these methods in the class definition:
+	
+	  	def +(that: Rational): Rational = new Rational(this.numerator * that.denominator + that.numerator * this.denominator,
+                                               		   this.denominator * that.denominator)
+
+  		def *(that: Rational): Rational = new Rational(this.numerator * that.numerator, this.denominator * that.denominator)
+
+- a literal identifier is a string enclosed in back ticks `...` , and a good use case example is when wanting to call the Thread.yield() static method of java Thread class. Since yield is a reserved keyword in scala, the way this can be done is by calling
+		
+		Thread.`yield`();
+
+- overloading the operators for the Rational class will allow using them in infix expressions, as if they are part of the core language.
+		
+		val r = new Rational(...)
+		r * 2			// this will work, translates to r.*(2)
+		2 * r 			// this will not work, as the Int type does not have an overloaded * method that takes in a Rational
+
+	This can be resolved using implicit conversions.
+
+		implicit def intToRational(i: Int): Rational = new Rational(i)
+
+	However, for this to work, it must be in scope (i.e. declared in the interpreter, or in the object companion class in case of a main method, NOT in the class)
+
+- only a handful of built-in control strucutres are available: if, while, for, try, match, and function calls. The reason is that function literals were included since inception. Instead of accumulating one higher-level control structure after another inthe base syntax, scala acumulates them in libraries.
+
+- almost all of scala's control structures result in a value.
+
+		var filename = "default.txt"
+		if(!args.isEmpty)
+			filename = args(0)
+
+	using the value returned by an if structure, this can be written as:
+
+		val filename = 
+			if (!args.isEmpty) args(0)
+			else "default.txt"
+
+- using a val instead of a var has two advantages:
+	-> it saves readers of the code from scanning all the code in the variable's scope to see if it ever changes;
+	-> it better supports equational reasoning. The introduced variable is equal to the expression that computes it, assuming that the expression has no side effects.
+
+	Thus, any time that one is about to write the variable name, the actual expression could be written, if the expression is pure.
+
+- while loops behave as in other languages, having a condition and a body, and being re-executed until the condition is false.
+
+- the while, and do-while constructs are called 'loops', and not expressions, because they don't yield any interesting value. The type of their result is Unit. A value (and only one) exists whose type is Unit. It is called the unit value, and written (). The existence of () is how scala's Unit differs from java's void.
+
+		def greet() { println("Hello!") }
+
+		greet() == () // => true
+
+- because no equals sign precedes its body, 'greet' is defined to be a procedure with a result type of Unit. Therefore, it returns the unit value, ().
+
+-!!!! one other construct that returns the Unit value, is reassignment to vars. For example, the idiom from C/C++/Java:
+		
+		var line = ""
+		while((line = readLine()) != "") { // This will not work, as var assignment will return ().
+			println("Read: " + line)
+		}
+
+- since while loops yield no useful value, they usually come hand-in-hand with vars, or other side effects, like I/O. They should be avoided, if possible.
+
+- the simplest thing that cana be done with a for loop is to iterate through all the elements of a collection.
+	
+		val filesHere = new java.io.File(".").listFiles
+		for (file <- filesHere) 
+			println(file)
+
+	With the "file <- filesHere" syntax, which is called a 'generator', we can iterate through the elements of filesHere. In each iteration, a new val named file is initialized with an element value. The compiler infers the value type, as filesHere is an Array[File]. This for expression syntax works for any kind of collection, not just arrays. One convenient special case is the Range type, e.g.:
+
+		for(i <- 1 to 4) 		// => [1, 2, 3, 4]
+		for(i <- 1 until 4)		// => [1, 2, 3]
+
+- this type of for generator can be used with any type that has certain methods, with appropriate signatures. In this case, it is the 'foreach' method.
+
+- filtering a collection to a subset can be done using the for expression, by adding a filter, i.e. an if clause inside the for's parantheses.
+
+		for(file <- filesHere
+			if file.isFile
+			if file.getName.endsWith(".scala")
+		) println(file) 
+
+	this should yield the same behavior as 
+		
+		filesHere.filter(_.isFile)
+				 .filter(_.getName.endsWith(".scala"))
+				 .foreach(println)
+
+- in order to perform nested iterations, multiple generatos clauses can be used (i.e. <-)
+	
+		for	{
+			file <- filesHere
+			if file.getName.endsWith(".scala")  // would require ; if the for used (), because ; are not inferred while inside ()
+			line <- fileLines(file)
+			// will iterate through all the lines of the file
+			if line.trim.matches(pattern)
+		} println(file + ": " + line.trim) // can access both the outer iterator as well as the inner one.
+ 
+- curly braces can be used instead of parantheses, to surround generators and filters. One advantage to using curly braces is that some semicolons can be left off, as they are not inferred inside parantheses.
+
+- variables can be bound mid-stream, for example the line.trim from above, which is nontrivial computation, can only be computed once, and then bound to a val. This can be done as follows:
+		
+		for {
+			// ...
+			line <- fileLines(file)
+			trimmed = line.trim
+			if trimmed.matches(pattern)
+		}	println(file + ": " + trimmed)
+
+- a value can be generated to be remembered for each iteration. To do so, the body of the for expression must be prefixed by the yield keyword.
+	
+		def scalaFiles =
+			for {
+				file <- files
+				if file.getName.endsWith(".scala")
+			} yield file
+
+- each time the body of the for will execute, it will produce a value, in this case simply file. When the for expression completes, the result of the expression will be a collection, containing all of the yielded values. The type of the resulting collection is based on the kind of collections processed in the iteration clauses. In this case, the result is an Array[File], because that is the type of files, and the type of the yielded expression is File.
+
+- the for-yield expression has the following syntax:
+		
+		for { clauses } yield { body }
+
+- scala exceptions behave just like any other language. Instead of returning a value in a normal way, a method can terminate by throwing an exception. The method's caller can either catch, and handle that exception, or it can itself simply terminate, in which case the exception propagates to the caller's caller. The exception propagates this way, unwinding the call stack until a method handles it, or there are no more methods left.
+
+- throwing an exception is identical to Java:
+		
+		throw new IllegalArgumentException
+
+- throw is an expression, that has a result type of 'Nothing'. 
+
+		val half = 
+			if (n % 2 == 0) 
+				n / 2
+			else
+				throw new RuntimeException("n must be even!")
+
+- if n is not even, an exception will be thrown before half can be initialized to anything at all. Because of this, it is safe to treat a thrown exception as any kind of value whatsoever.
+
+- this is very useful in the case of an if-else branching, since one branch will compute a result, and therefore will have a return type, and the other will throw an exception, yielding a value of type Nothing.
+Therefore, the type of the result will be that of the branch that computes something.
+
+- scala syntax for the catch clauses uses pattern matching by exception type.
+
+	e.g.:
+
+		import java.io.FileReader
+		import java.io.FileNotFoundException
+		import java.io.IOException
+
+		try {
+			val f = new FileReader("input.txt")
+			// use and close file
+		} catch {
+			case ex: FileNotFoundException => // handle missing file
+			case ex: IOException => // handle other I/O error.
+		}
+
+- if the exception does not match any pattern, the try-catch will terminate, and the exception will propagate further.
+
+- scala does not require catching checked exceptions, or declare them in a throws clause. The throws clause can be declared using the @throws annotation, but it is not required.
+
+- try-catch may also employ a finally clause, which ensures that resources that have been opened are also closed, regardless of the result of the try-catch expression.
+	
+		val file = new FileReader("input.txt")
+		try { 
+			// ... use the file
+		} catch {
+			// ... any exceptions thrown
+		} finally {
+			file.close() // close the file, regardless of the execution path.
+		}
+
+- as with most other control structures, try-catch-finally results in a value. The value computed in the finally clause is dropped, UNLESS there is an explicit return statement, and therefore overwrite any other value computed.
+
+		def f(): Int = try { return 1 } finally { return 2 }
+
+		f() // => 2!!!
+
+		def g(): Int = try { 1 } finally { 2 }
+
+		g() // => 1
+
+- both of these functions exhibit behavior that would surprise most programmers, thus it's usually best to avoid returning values from finally clauses. For implementing a fallback result in case of a malformed URL, the next thing can be done:
+		
+		def urlFor(path: String) = {
+			try {
+				new URL(path)
+			} catch {
+				case e: MalformedURLException => new URL("http://scala-lang.org")
+			}
+		}
+
+- match expression allows selection from a number of alternatives, like the switch statement does in other languages. In general, a match allows selection between arbitrary patterns.
+
+- match clauses have no fall-through behavior like switch statements do, and there is a wildcard _ that matches all possible cases.
+
+- the most significant difference from java is that match expressions result in a value.
+
+		val friend = firstArg match {
+			case "salt" => "pepper"
+			case "chips" => "salsa"
+			case "eggs" => "bacon"
+			case _ => "huh?"
+		}
+
+- there are always better, recursive alternatives to whiles with break-continue:
+
+		@tailrec
+		def searchFrom(i: Int):Int = {
+			if(args.length <= i) -1
+			else if(args(i).startsWith("-")) searchFrom(i + 1)
+			else if(args(i).endsWith(".scala")) i
+			else searchFrom(i + 1)
+		}
+
+- the scala compiler will not actually emit a recursive function for this code, as all the recursive calls are in tail-call position. The compiler will generate code similar to a while loop. Each recursive call will be implemented as a jump back to the beginning of the function.
+
+- the mechanism for breaking out of a while loop is supported if:
+		
+		import scala.util.control.Breaks._
+		import java.io._
+
+		val in = new BufferedReader(new InputStreamReader(System.in))
+
+		breakable {
+			while(true) {
+				println("? ")
+				if(in.readLine() == "") break
+			}
+		}
+- the Breaks class implements break by throwing an exception that is caught by an enclosing application of the breakable method. Therefore, the call to break does not need to be in the same method as the call to breakable.
+
+- a variable having the same name can be redefined in an inner scope, but not in the same scope, i.e.:
+	
+		val a = 1;
+		{
+			val a = 2;
+			println(a) // 2
+		}
+		println(a)	// 1
+
+- the inner variable is said to 'shadow' the outer one, which becomes invisible.
+
+- Functions and closures::
+		
+	1) Methods - defining a function as a member of some object.
+
+	2) Local Functions - 
+		An important design principle of the functional programming style is that programs should be decomposed into many small functions, that each do a well-defined task. The advantage is that the programmer has many building blocks that can be flexibly composed to do more difficult things. Each building block should be simple enough to be understood individually. A problem with this style is that, due to the high number of small functions, the program namespace can be unnecessarily polluted.
+			Scala provides two ways to do this, either the private method (like Java), or by using local functions (functions inside other functions).
+
+				e.g.:
+
+				def outerFunction(...) {
+					def innerHelperFunction(...) { 		// not visible outside the scope of 'outerFunction'
+						...
+					}
+				}
+
+		Another advantage of this style is that the inner function can access the unchanged parameters of the outer function (closure state), so they require even less parameters.
+
+	3) First-class functions - functions can be written as unnamed literals, and then passed around like values. A function literal is compiled into a class, that is a function value, when instantiated at runtime. The difference, then, between function literals and function values is that the literals exist in the source code, and the values exist as objects at runtime. Example of such a function:
+
+			(x: Int) => x + 1
+
+		Function values are objects, so they can be stored in variables, if needed. Being functions, they can also be called, using the standard function-call notation.
+	Each function value is an instance of some class that extends one of several FunctionN traits in package scala. each FunctionN trait has an apply method used to invoke the function.
+
+			val increase = (x: Int) => x + 1
+
+			increase: (Int) => Int = <function1>
+
+	If more than one statement is required in the function literal, its body must be surronuded by curly braces, thus forming a block. The behaviour of such a function is that of any other method in scala.
+	Many scala libraries provide the opportunity to use function literals and function values. For example, a foreach method is available for all collections (defined in trait Traversable, which is a common supertrait of List, Set, Array, and Map). It takes a function as an argument, and invokes that function on each of its elements.
+
+	4) Short function literals -  a way to make function literals more short is by leaving out redundant information, for example not specifying the parameter types. This is called target typing, because the targeted usage of an expression, in this case an argument to someNumbers.filter(x => x > 0) is allowed to influence the typing of that expression, like determining the type of the x parameter.
+
+	5) Placeholder syntax - someNumbers.filter(_ > 0). The underscore can be thought of as a 'blank' in the expression, that will be filled by each of the elements of 'someNumbers'. The function literal _ > 0 is, therefore, equivalent to the slightly more verbose form x => x > 0.
+		The compiler may sometimes get confused as to what types should the placeholder syntax should be expanded to (much like target typing issue from above).
+			e.g.:
+				val sum = _ + _ // will generate an error because of missing parameter type, i.e. cannot be directly inferred.
+
+			In such cases, the solution is to explicitly specify the types, using a colon, like:
+
+				val sum = (_: Int) + (_: Int)
+				sum: (Int, Int) => Int = <function2>
+
+			!! Note that _ + _ expands into a literal for a function that takes TWO parameters, and therefore, the placeholder syntax can only be used if each parameter appears in the function literal at most once. Multiple underscores mean multipleparameters, not reuse of a single parameter repeatedly. The order of the parameter is the same as the order in which the underscores are encountered (i.e. the first underscore will mean the first argument, ...)
+
+--- Partially applied functions ---
+	
+- The underscore can also yield a partially applied function, such as:
+
+	someNumbers.foreach(println _)
+
+-Scala treats this short sytnax as if the following was written:
+
+	someNumbers.foreach(x => println(x))	
+
+- Thus, the underscore in this case is not a placeholder for a single parameter, but rather for the whole parameter list. In scala, calling a function is done by calling its 'apply' method, on the required arguments.
+
+- Although a method or nested function can't be assigned to a variable, or be passed as argument to another function, these things can be done if the method/nested function are wrapped in a function value, by placing an underscore after its name. It may not be obvious why is it called a partially applied function (because it is not partially applied), but the name comes from the fact that the function is NOT applied to ALL of its required arguments. It just so happens that in this case it's applied to none of its arguments. Obviously, a partially applied function can be expressed by supplying some of its arguments, e.g.:
+
+	def sum(a: Int, b: Int, c: Int): Int = a + b + c
+	
+	val b = sum _	// => function3 (Int, Int, Int) => Int
+
+	val c = sum(1, _: Int, 3) // => function1 (Int) => Int
+
+- In the last example, since only one parameter is missing, a new function class is generated, one whose apply method takes in one parameter and, when called, it calls sum, in turn, passing in 1, its own argument, and 3 to sum.
+
+- When  writing a partially applied function in which all parameters are left off, the underscore may be omitted, if a function is expected at that point in the code, e.g.:
+
+		someNumbers.foreach(println)		// instead of (println _)
+
+--- Closures ---
+
+- A function literal can also refer to variables defined elsewhere, not only its parameters.
+	
+		(x: Int) => x + more
+
+- this function adds 'more' to its argument, but what is more?
+	-> from the point of view of this function, more is a FREE VARIABLE, because the function literal does not itself give any meaning to it.
+	-> the x variable, by contrast, is a BOUND VARIABLE, because it does have a meaning in the context of the function: it's defined as the function's only parameter. If somebody tries to use the function literal by itself, without any 'more' defined in its scope, the compiler will complain.
+
+- On the other hand, the same function literal will work fine as long as there is something bound to the name 'more'.
+
+[[[[ Why the trailing underscore? ]]]]
+- unlike the classical functional languages, such as Haskell, or ML, scala opted for another design (which implied a trade-off). In these languages, partially applied functions are considered the normal case, but they have a fairly strict static type system that will usually highlight every error with partial applications that can be made. The object-oriented tradition of subtyping, and the universal root type accepts some programs that would be considered erroneous in classical functional languages. To avoid these errors, scala normally requires you to specify function arguments that are left out explicitly, even if the indication is as simple as '_'. This trailing underscore can be omitted when a function is expected.
+[[[[							  ]]]]
+
+- the function value that's created at runtime from this function literal is called a closure. The name comes from the act of "closing" the function literal by "capturing" the bindings of its free variables.
+
+- a function literal with no free variables, such as (x: Int) => x + 1 is called a closed term, where a term is a bit of source code.
+
+-on the other hand, (x: Int) => x + more is an open term, and as such, by definition, it will require that a binding for its free variable, 'more', be captured. The resulting function value, which will contain a reference to the captured 'more' variable is called a closure, because the function value is the end product of the act of closing an open term.
+
+- if a free variable changes after the closure has been created, the change will be reflected in the closure. This is because scala's closures capture variables themselves, not the value to which they refer.
+- This is true in the opposite direction, as well, i.e. changes made by a closure to a captured variable is visible outside the closure.
+
+--- Special function call forms ---
+
+- a few special forms of function definitions and function calls have been added to address some special needs.
+
+	1) Repeated parameters - allows indication that the last parameter to a function may be repeated. This allows clients to pass variable length argument lists to the function.
+
+		def echo(args: String*) = {
+			for(arg <- args) println(arg)
+		}
+
+	- defined in this way, echo can be called with 0 -> N string arguments echo(), echo("abc"), echo("abc", ..., "xyz").
+
+	- inside the function, the type of the repeated parameter is an Array[Type]. In the above case, args is an Array[String].
+
+	- however, if one has an array of the appropriate type, such as:
+
+		val arr = Array("abc", "bcd", "cde")
+
+		echo(arr) 		// this will generate a compiler error, because arr's elements will not be passed one by one to echo, but the whole array as a single argument.
+
+		echo(arr: _*)	// this tells the compiler to pass each element of arr as an individual parameter to echo.
+
+	2) Named arguments - allow passing arguments to a function in a different order than the declaring one. The syntax is simply that each argument is preceded by a parameter name, and an equals sign.
+
+		def speed(distance: Int, time: Int): Int = distance * time
+
+		speed(1000, 10)
+		speed(time = 10, distance = 1000)
+		speed(distance = 1000, time = 10)			
+
+	- mixing positional, and named arguments is allowed, but the positional arguments must then come first.
+
+	3) Default parameter values - scala allows specifying default values for function parameters. Additionally, the argument for such a parameter can be omitted from a function call, in which case the corresponding default value will be bound to the parameter name. Default parameters come in very handy, especially in calling a function with the named arguments notation.
+
+		def printTime2(out: java.io.PrintStream = Console.out, divisor: Int = 1) = out.println("Time: " + System.currentTimeMillis() / divisor)
+
+	- if one wanted to override the default value for divisor, this would not be possible (without making use of named parameters), unless the out parameter was given a new value, as well.
+
+		printTime2(divisor = 1000)
+
+
+--- Tail recursion ---
+
+- tail recursion optimizations can only be applied to functions that call themselves. The scala compiler will not optimize mutually recursive functions, such as: 
+	
+		def isEven(x: Int): Boolean = if(x == 0) true else isOdd(x - 1)
+		def isOdd(x: Int): Boolean = if(x == 0) false else isEven(x - 1)
