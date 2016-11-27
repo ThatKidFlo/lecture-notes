@@ -159,25 +159,38 @@
 	  def sumMR(f: Int => Int)(a: Int, b: Int) = mapReduce(f, _ + _, 0)(a, b)
 	  def prodMR(f: Int => Int)(a: Int, b: Int) = mapReduce(f)(1)(_ * _)(a, b)
 
+- language elements come in handy to express types, expressions, and definitions.
+		
+	their context-free syntax, in Extended Bakus-Naur form (EBNF):
 
+		| - denotes an alternative
+		[ .. ] - denotes an option (0 or 1)
+		{ .. } - denotes a repetition (0 or more)
 
+-- Types
+Type = SimpleType | FunctionType
+Types = Type {',' Type}
+FunctionType = SimpleType '=>' Type | '(' [Types] ')' '=>' Type
+SimpleType = Ident
 
+-- An expression can be:
+	
+	-> an identifier (x, mapReduce, etc.)
+	-> a literal ("abc", 0.1, -7)
+	-> a function application (sqrt(x))
+	-> an operator application (!true, -7, 3 + 2)
+	-> a selection (such as math.abs)
+	-> a conditional expression (if(x < 0) -x else x)
+	-> a block ({ val x = math.abs(x); x * 2 })
+	-> an anonymous function (x => x + 1)
 
+-- A definition can be:
+	
+	-> a function definition (def f(x: Int) = x + x)
+	-> a value definition (val y = square(2))
 
+-- A parameter can be:
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	-> a call-by-value parameter f(x: Int)
+	-> a call-by-name parameter f(x: => Int)
 
