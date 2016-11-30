@@ -464,3 +464,101 @@ Therefore, the type of the result will be that of the branch that computes somet
 	
 		def isEven(x: Int): Boolean = if(x == 0) true else isOdd(x - 1)
 		def isOdd(x: Int): Boolean = if(x == 0) false else isEven(x - 1)
+
+--- Writing new control structures ---
+
+- for functions that take exactly one parameter as input, the parantheses notation for the parameter could be substituted for curly braces. This comes in handy when trying to abstract control patterns into something that looks like native language support.
+
+		e.g. 
+
+		def withPrintWriter(file: File, op: PrintWriter => Unit) { ... }
+
+	could be re-written as
+
+		def withPrintWriter(file: File)(op: PrintWriter => Unit) { 
+			// open resource
+			// call op(resource)
+			// close resource
+		}
+
+	its usage in client code would look like it is a language construct, rather than library code:
+
+		withPrintWriter(new File("file.txt")) { writer =>
+			// usage of the borrowed writer resource
+			// opening the resource, and closing it afterwards isn't the responsibility of the client code anymore
+		}
+
+--- Scala's hierarchy ---
+
+- every scala class inherits from the common superclass, Any.
+
+- scala also defines Null, and Nothing, which act as common subclasses of every class.
+	-> Null is a subclass for all the AnyRef descendents, and it is the type of the null literal
+	-> Nothing subclasses even null, it is at the bottom of scala's type hierarchy, but there are no instances of this type.
+		this comes in handy when wanting to signal abnormal termination:
+
+			def divide(x: Int, y: Int): Int = {
+				if(y != 0) x / y
+				else error("Cannot divide by zero!") 
+			}
+
+		in this snippet, the else branch's return type is Nothing, which is a subclass of Int, and uplifted to it, therefore the whole conditional yields a type Int, as required.
+
+- the methods declared by class Any are:
+		
+		final def ==(that: Any): Boolean
+		final def !=(that: Any): Boolean
+		def equals(that: Any): Boolean
+		def ##: Int 					//hashcode
+		def hashCode: Int
+		def toString: String
+
+- the == method is equivalent to java's equals, but they allow each class to tailor their own meaning of equality, by overriding the equals method.
+
+- the only time when scala does not directly call .equals is for java's boxed numeric types. 
+	In java,
+		new Long(1).equals(new Integer(1)) // will yield false.
+
+	Scala tries to correct this, by adding special cases in the == method, for these numeric wrapper classes.
+	Also, scala's ## will hash two numeric wrappers (of different type) to the same hash value, if the value they wrap is the same,
+ as opposed to java's .hashCode()
+
+- != is always the negation of equals. (except for the corner-cases presented above)
+
+- The two subtypes of Any are AnyVal, and AnyRef
+	
+	AnyVal has 9 subtypes: 
+	Those types are Int, Char, Boolean, Byte, Short, Float, Double, Long, Unit.
+
+	The first 8 types correspond to java's primitive types, and at runtime are represented by those. They are always written as literals (can never be instantiated with new) because they are all declared as both abstract, and final.
+
+	The last type, Unit, corresponds to java's void type, which has a single instance value, which is written as ().
+
+- The value class space is flat, all of the classes mentioned above inherit from AnyVal directly, but they are not subclasses of each other. Instead, there are implicit conversions between different value classes.
+
+- On the JVM, AnyRef is an alias for java.lang.Object, whereas in .NET it aliases System.Object. To remain decoupled from the platform, the recommendation is that AnyRef is used instead of any of the specifics that it aliases.
+
+- Scala classes are different from java Objects, because they also inherit from a marker trait, ScalaObject
+
+- scala is a more pure object-oriented language than java, as no difference between its primitive, and boxed types can be observed.
+
+		public boolean isEqual(Integer x, Integer y) { 
+			return x == y; 
+		}
+
+		isEqual(123, 123); // will yield false, because the integer gets boxed twice, and the equality check is performed against the references, not the actual values.
+
+		def isEqual(x: Int, y: Int): Boolean = {
+			x == y
+		}
+
+		isEqual(123, 123) // will yield true.
+
+- since for all reference types, other than java's boxed values, since == is treated as an alias for equals, the string comparison trap from java is no longer a problem in scala.
+	
+		new String("abc") == new String("abc") // will be false in java, and true in scala.
+
+- when reference equality is desired, however, scala's AnyRef class provides the .eq and .ne methods.
+
+
+
