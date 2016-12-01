@@ -561,4 +561,43 @@ Therefore, the type of the result will be that of the branch that computes somet
 - when reference equality is desired, however, scala's AnyRef class provides the .eq and .ne methods.
 
 
+--- Traits ---
 
+- a trait encapsulates methods, and fields, which can be reused by mixing them into classes.
+
+- unlike inheritance, a class may mix in any number of traits
+
+- two of the most common usages of traits are:
+	-> widening thin interfaces to rich ones
+	-> defining stackable modifications
+
+- a trait definition looks pretty much like a class definition, but using the keyword trait.
+
+		trait Philosophical {
+			def philosophize() {
+				println("I consume memory, therefore I am!")
+			}
+		}
+
+- mixing a trait into a class definition can be achieved using the with or extends keywords
+
+		class [ClassName] extends [Trait1] with [Trait2] with ...
+
+- if the extends keyword is used to mix in a trait, its superclass is automatically inherited.
+
+- a trait also defines a type.
+
+		val frog: Frog = new Frog with Philosophical
+		// OR
+		val frog: Philosophical = new Frog with Philosophical // frog could be any class that mixes in the Philosophical trait.
+
+- traits can also be mixed in to classes that already extend a superclass
+	-> the superclass will be present in the extends clause
+	-> the traits will be enumerated in the with clauses.
+
+- a class that mixes in traits could also override the trait methods, which means it is still usable as a member of the trait's type, but provide specific behaviour (like interfaces in java)
+
+- traits can also hold state, and have fields, unlike java interfaces, but:
+	1) they cannot receive class parameters (i.e. parameters to the primary class constructor)
+	2) calls to super are undefined when the trait is defined, because they are dynamically bound, and the concrete implementation bo be invoked will be defined when the trait is mixed into a concrete class.
+	this behaviour is the key that allows traits to be used as stackable modifications.
